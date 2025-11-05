@@ -7,6 +7,7 @@ import json
 import re
 from src.bronco_finder_agent import CorrectorAgent
 import src.utils as utils
+from datetime import datetime
 
 class CorrectionFailed(Exception):
     def __init__(self, student, error_type, message):
@@ -79,10 +80,6 @@ class LabCorrector():
         self.remove_error_type_txts()
 
     def get_students_list(self):
-        if self.student_to_correct:
-            student_path = os.path.join(self.students_path, self.student_to_correct)
-            return [Student(student_path)]
-
         students = []
 
         for folder in os.listdir(self.students_path):
@@ -294,10 +291,10 @@ class LabCorrector():
 
     def correct_code(self):
         code = self.get_student_code()
-        self.check_fopen_path(code)
         if self.do_bronco_detection:
             self.detect_bronco(code)
-        
+        self.check_fopen_path(code)
+    
     def correct_output(self, testcase):
         self.run_student_code(testcase)
         outputs = self.get_and_process_outputs(testcase)
@@ -311,10 +308,8 @@ class LabCorrector():
             lines = [line.rstrip('\n') for line in outputs[output]] 
 
             if len(lines) < 2:
-                raise OutputFormattingError(
-                    self.student,
-                    f"Output vazio no caso teste {testcase}"
-                )
+                output_formatting_errors += f"Output vazio no caso teste {testcase}: {output}:"
+                continue
             
             # Get the correct answers and line matching patterns
             answers_path = os.path.join(self.testcases_path, testcase, f'saida{self.numero_lab}.json')
@@ -330,25 +325,27 @@ class LabCorrector():
                 student_value = utils.get_first_match_in_first_matching_line(lines, self.value_to_regexes[value_name]["lines"], self.value_to_regexes[value_name]["values"])
                 # If can't find a value, raise error asap
                 if student_value is None:
-                    output_formatting_errors += f"Caso teste: {testcase}: Nao imprimiu {value_name.upper()}\n"
+                    output_formatting_errors += f"Caso teste: {testcase}: {output}: Nao imprimiu {value_name.upper()}\n"
                 # If value is diff from the answer, continue correction
                 if student_value and int(student_value) != answers[value_name]:
                     wrong_values.append(value_name)
                 
             for value_name in wrong_values:
-                failed_testcase_errors += f"Caso teste {testcase}: {value_name.upper()} errado\n"
+                failed_testcase_errors += f"Caso teste {testcase}: {output}: {value_name.upper()} errado\n"
             
             # Correct list of values the student printed on output
             line_regexes = line_regexes_from_json if self.use_json_to_get_line_patterns else self.array_regexes["lines"]
             student_values = utils.get_first_matches_in_many_matching_lines(lines, line_regexes, self.array_regexes["values"])
             # If student list is not right, raise error
             if student_values != answers[self.json_field_with_array]:
-                failed_testcase_errors += f"Caso teste: {testcase}: ORDENACAO ERRADA\n"
+                failed_testcase_errors += f"Caso teste: {testcase}: {output}: ORDENACAO ERRADA\n"
 
         if output_formatting_errors:
+            output_formatting_errors += "\n"
             raise OutputFormattingError(self.student, output_formatting_errors)
 
         if failed_testcase_errors:
+            failed_testcase_errors += "\n"
             raise FailedTestcaseError(self.student, failed_testcase_errors)
 
     def detect_bronco(self, code):
@@ -357,7 +354,7 @@ class LabCorrector():
         prompt = (
             self.ai_correction_introduction_prompt
             + "\n\nCritérios de correção:\n\n"
-            + self.ai_correction_criteria
+            + "\n\n".join(self.ai_correction_criteria)
             + "\n\nCódigo do aluno:\n\n"
             + code
         )
@@ -375,7 +372,6 @@ class LabCorrector():
             self.compile_student_code()
         except (CompilationError, WrongFilePathError):
             return
-        self.add_log(f"\n{"-"*25}\nRESULTADOS CASOS TESTE:\n{"-"*25}\n", encoding="utf-8")
         for testcase in os.listdir(self.testcases_path):
             try:
                 self.correct_output(testcase)
@@ -384,32 +380,44 @@ class LabCorrector():
                 continue
         if not self.student.logs:
             self.student.error_type = "NO-ERRORS"
-        
 
     def make_correction(self):
-        progress = 1
         try:
+            correct_all_students = (self.student_to_correct is None)
+            # If any student error is missing, correct all
             for student in self.students:
-                if student.error_type is None:  # If any student error is missing, correct all
+                if student.error_type is None:
                     self.error_type_to_correct = 'ALL'
+                    correct_all_students = True
                     break
-            if self.error_type_to_correct == 'ALL':
-                students_to_correct = self.students
-            else:
-                students_to_correct = [student for student in self.students if student.error_type == self.error_type_to_correct]
+            students_to_correct = [student for student in self.students if (self.error_type_to_correct == 'ALL' or student.error_type == self.error_type_to_correct)]
+            if not correct_all_students:
+                students_to_correct = [student for student in students_to_correct if student.name == self.student_to_correct]
+            progress = 1
+            start = datetime.now()
             for student in students_to_correct:
                 self.student = student
-                print(f"Correcting... ({progress}/{len(students_to_correct)}). Current student: {student.name }")
+                start_student = datetime.now()
+                print(f"Correcting... ({progress}/{len(students_to_correct)}). Current student: {student.name}")
                 progress += 1
                 self.clear_logs_file()
                 self.remove_outputs_folder()
                 self.make_student_correction()
                 self.remove_unwanted_files()
-                self.add_log(f"\n{"-"*25}\nLOGS ERROS:\n{"-"*25}\n", encoding="utf-8")
+                self.add_log(f"{"-"*25}\nLOGS ERROS:\n{"-"*25}\n", encoding="utf-8")
                 self.log_errors(encoding="utf-8")
                 self.remove_unwanted_files()
+                end_student = datetime.now()
+                total_seconds = (end_student - start_student).total_seconds()
+                minutes = int(total_seconds // 60)
+                seconds = total_seconds % 60
+                print(f"Time spent: {minutes} min {seconds:.3f} s")
             self.create_error_type_txts()
-            print("Correction ended successfully")
+            end = datetime.now()
+            total_seconds = (end - start).total_seconds()
+            minutes = int(total_seconds // 60)
+            seconds = total_seconds % 60
+            print(f"Correction ended successfully.\nTotal time spent: {minutes} min {seconds:.3f} s\n")
         except Exception as e:
             print(f"Correction failed due to error: {e}")
             traceback.print_exc()
