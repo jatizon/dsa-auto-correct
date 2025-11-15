@@ -26,6 +26,11 @@ class DadosLab:
         )
 
         parser.add_argument(
+            "-j", "--jump_to_student",
+            help="Pular para um aluno específico e continuar a partir dele"
+        )
+
+        parser.add_argument(
             "error_type",
             nargs="?",
             default="ALL",
@@ -45,6 +50,7 @@ class DadosLab:
         self.error_type_to_correct = args.error_type
         self.do_bronco_detection = args.bronco
         self.student_to_correct = args.student
+        self.jump_to_student = args.jump_to_student
 
         self.compile_timeout = 5
 
@@ -59,7 +65,7 @@ class DadosLab:
         self.array_regexes = {
             "lines": [],
             "values": [
-                r"^(.*\S).*$"
+                r"^(.*\S)"
             ]
         }
 
@@ -128,8 +134,15 @@ class DadosLab:
             1. Sempre que uma linha de código ou comentário tiver mais de 150 caracteres, quebre a linha para continuar na linha seguinte, usando recuo adequado para manter a legibilidade.
             2. Evite linhas muito longas; prefira múltiplas linhas curtas.
             3. Não quebre as instruções de formato de resposta (como [OK]: ou [ERROU]:) em múltiplas linhas.
-            4. A quebra de linha deve usar um caractere literal de nova linha (\n) e manter a indentação consistente.\
-            
+            4. A quebra de linha deve usar um caractere literal de nova linha (\n) e manter a indentação consistente.
+
+            **Instrução Geral sobre Tabelas e Gráficos em PDF/Imagem:**  
+            Se algum dado necessário para a correção (como tabela, gráfico ou outro resultado) estiver enviado como imagem ou em PDF de forma que não seja possível ler os valores, considere que o critério correspondente **não pôde ser conferido**.  
+            - Avisar no critério de correção que a informação não foi encontrada.  
+            - Para avaliação, priorizar tabelas ou análises textuais que sejam legíveis.  
+            - Se houver números/textos suficientes para avaliação do raciocínio ou coerência, use-os para julgar o relatório.  
+            - Essa regra se aplica a tabelas de resultados, gráficos de tempo ou comparações, e qualquer outra informação enviada como imagem.  
+            - Se houver outras informações no relatório que te permitam corrigir esse critério, considerá-las
             '''
 
         # Each element is an instruction for the ai agent
@@ -182,10 +195,6 @@ class DadosLab:
             Verificar que o tempo medido corresponde apenas ao processo de ordenação,
             com o timer iniciado APÓS o preenchimento do vetor e finalizado ANTES da escrita do arquivo.""",
 
-            """Parte B — testes de 2 segundos e variantes de MergeSort:
-            Verificar que o aluno executou testes para determinar o maior n que roda em até 2 segundos
-            para BubbleSort, QuickSort e MergeSort (com T local e T global).""",
-
             """Limite de string:
             Verificar que o código reserva espaço suficiente para strings, seguindo a recomendação da aula:
             1. A string deve ter espaço para até 50 caracteres visíveis.
@@ -194,15 +203,13 @@ class DadosLab:
             4. Considerar erro se o tamanho do array for menor que 50 ou maior que 55, para evitar alocação insuficiente ou desperdício excessivo de memória.""",
 
             """Uso correto de vetor auxiliar em MergeSort:
-            Verificar se implementa duas versões do MergeSort, uma com vetor auxiliar local e outra com vetor global.""",
-
-            """MergeSort — vetor global como versão principal:
-            Verificar que, para o MergeSort, as variantes foram utilizadas da seguinte forma:
-            1. MergeSort com vetor T local — usado apenas para testes de desempenho (2 segundos).
-            2. MergeSort com vetor T global — considerado a versão “melhor” e deve ser usado em todo o restante do programa, inclusive na Parte A.""",
+            Verificar se implementou o vetor auxiliar do Mergesort global ou usando static, o que é o esperado.""", 
 
             """Segurança de memória:
             Confirmar que todas as alocações são liberadas corretamente (free).""",
+
+            """Segurança de memória para arquivos:
+            Confirmar que todas os arquivos foram fechados com fclose.""",
 
             """Tamanho do vetor:
             Verificar que os vetores são alocados com tamanho variável (dinâmico), 
@@ -211,6 +218,49 @@ class DadosLab:
             em tempo de execução, garantindo que o programa funcione para diferentes valores de n.""",
 
             """Cabeçalho:
-            O aluno deve colocar no início do código um cabeçalho com seu nome, o compilador utilizado e sua versão e outros informações."""
+            O aluno deve colocar no início do código um cabeçalho com seu nome, o compilador utilizado e sua versão e outros informações.""",
+
+            """**Relatório - Único Merge:**  
+            - Exceto no teste de 2 segundos, APENAS um MergeSort deve aparecer no restante do relatório, o melhor entre os dois, ou seja, o global.  
+
+            **Relatório - Melhor Merge:**  
+            - O MergeSort com vetor T global (ou estático) deve ser significativamente melhor que o MergeSort com T local, conforme o teste dos 2 segundos.  
+            - Verificar se o aluno percebeu essa diferença.  
+
+            **Relatório - Tabelas de resultados:**  
+            - Confirmar que o relatório contém tabelas com os dados de execução de cada método, incluindo:  
+            - Tamanho da entrada  
+            - Número de comparações  
+            - Tempo de execução  
+            - Pelo menos 10 entradas para cada método:  
+            - BubbleSort: múltiplos de 1.000  
+            - MergeSort e QuickSort: múltiplos de 100.000  
+
+            **Relatório - Análise de complexidade:**  
+            - Verificar se o aluno discutiu coerência com as complexidades teóricas:  
+            - O(n²) para BubbleSort  
+            - O(n*log(n)) para QuickSort e MergeSort  
+            - Avaliar se o texto indica que os resultados experimentais condizem com expectativas teóricas.  
+            - Basear a análise em valores numéricos, não em gráficos que não possam ser lidos.  
+
+            **Relatório - Desempenho relativo entre os métodos:**  
+            - Conferir se o QuickSort performou melhor que o MergeSort, como esperado.  
+            - Conferir se o BubbleSort foi o pior, conforme o esperado.  
+
+            **Relatório - Análise em geral:**  
+            - Avaliar se a análise do aluno faz sentido.  
+            - Não ser pedante; pequenas imprecisões são aceitáveis se o raciocínio estiver correto.  
+
+            **Relatório - Relação entre tempo e comparações:**  
+            - Confirmar que o relatório analisa a relação entre tempo de execução e número de comparações, discutindo se o comportamento é proporcional e coerente.  
+
+            **Relatório - Clareza e completude:**  
+            - Avaliar se o relatório está bem organizado, apresenta resultados de forma clara e completa.  
+            - Deve incluir conclusões ou comentários relevantes sobre o desempenho dos métodos.  
+            - A ausência de gráficos legíveis deve ser registrada, mas a avaliação deve usar as informações que forem acessíveis (tabelas, textos, valores).
+            """,
         ]
+
+        # Put false if no report expected (the first .pdf file will be considered for each student)
+        self.has_report = True
 

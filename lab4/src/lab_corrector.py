@@ -8,6 +8,7 @@ import re
 from src.bronco_finder_agent import CorrectorAgent
 import src.utils as utils
 from datetime import datetime
+import pdfplumber
 
 class CorrectionFailed(Exception):
     def __init__(self, student, error_type, message):
@@ -49,6 +50,7 @@ class LabCorrector():
         self.error_type_to_correct = dados_lab.error_type_to_correct
         self.do_bronco_detection = dados_lab.do_bronco_detection
         self.student_to_correct = dados_lab.student_to_correct
+        self.jump_to_student = dados_lab.jump_to_student 
         self.run_timeout = dados_lab.run_timeout
         self.compile_timeout = dados_lab.compile_timeout
         self.student_folder_files = dados_lab.student_folder_files
@@ -59,6 +61,7 @@ class LabCorrector():
         self.output_types = dados_lab.output_types     
         self.ai_correction_criteria = dados_lab.ai_correction_criteria
         self.ai_correction_introduction_prompt = dados_lab.ai_correction_introduction_prompt
+        self.has_report = dados_lab.has_report
 
         # If only one student, correct using all criteria
         if self.student_to_correct:
@@ -74,7 +77,6 @@ class LabCorrector():
             "NO-ERRORS.txt"
         ]
 
-        self.create_student_folders()
         self.students = self.get_students_list()
 
         self.remove_error_type_txts()
@@ -115,36 +117,6 @@ class LabCorrector():
         logs_correcao_path = self.student.path + "/logs_correcao_auto.txt"
         with open(logs_correcao_path, "a", encoding=encoding) as logs:
             print(message, file=logs)                
-
-    def create_student_folders(self):
-        lowercase_files = glob.glob(os.path.join(self.students_path, "lab*"))
-        for file_path in lowercase_files:
-            filename = os.path.basename(file_path)
-            new_filename = filename.replace('lab', 'Lab')
-            os.rename(file_path, os.path.join(self.students_path, new_filename))
-
-        CPP_files = glob.glob(os.path.join(self.students_path, "Lab*.CPP"))
-        for file_path in CPP_files:     
-            filename = os.path.basename(file_path)
-            new_filename = filename.replace('.CPP', '.cpp')
-            os.rename(file_path, os.path.join(self.students_path, new_filename))
-
-        cpp_files = glob.glob(os.path.join(self.students_path, "Lab*.cpp"))
-        student_names = []
-        for file_path in cpp_files:
-            filename = os.path.basename(file_path)
-            folder_name = filename[5:].replace('.cpp', '')
-            student_names.append(folder_name)
-            new_folder_path = os.path.join(self.students_path, folder_name)
-            os.makedirs(new_folder_path, exist_ok=True)
-            shutil.move(file_path, os.path.join(new_folder_path, filename))
-
-            other_files = [
-                f for f in os.listdir(self.students_path)
-                if folder_name in f and not f.endswith('.cpp') and os.path.isfile(os.path.join(self.students_path, f))
-            ]
-            for other_file in other_files:
-                shutil.move(os.path.join(self.students_path, other_file), os.path.join(new_folder_path, other_file))
 
     def remove_outputs_folder(self):
         outputs_path = os.path.join(self.student.path, "outputs")
@@ -227,6 +199,17 @@ class LabCorrector():
             )
             
         return outputs
+    
+    def get_report(self):
+        report_path = glob.glob(f'{self.student.path}/Lab*.pdf')[0]
+        text = ''
+        with pdfplumber.open(report_path) as pdf:
+            for page in pdf.pages:
+                txt = page.extract_text()
+                if txt:
+                    lines = [line for line in txt.split('\n') if not line.strip().isdigit()]
+                    text += '\n'.join(lines) + '\n'
+        return text.strip()
 
         
     def get_student_code(self):
@@ -283,16 +266,43 @@ class LabCorrector():
 
     def check_fopen_path(self, student_code):
         pattern_entrada = fr'fopen\s*\(\s*"[Ee]ntrada{self.numero_lab}\.txt"\s*,\s*".*?"\s*\)'
-        pattern_saida = fr'fopen\s*\(\s*"Lab{self.numero_lab}_[a-zA-Z0-9_]+\.txt"\s*,\s*".*?"\s*\)'
         nome_entrada_correto = re.search(pattern_entrada, student_code) is not None
-        nome_saida_correto = re.search(pattern_saida, student_code) is not None
-        if not nome_entrada_correto or not nome_saida_correto:
-            raise WrongFilePathError(self.student, "Erro no nome dos arquivos de entrada ou saída\n")
+
+        if not nome_entrada_correto:
+            raise WrongFilePathError(self.student, "Erro no nome do arquivo de entrada\n")
+
+        if not self.output_types:
+            pattern_saida = fr'fopen\s*\(\s*"Lab{self.numero_lab}_[a-zA-Z0-9_]+\.txt"\s*,\s*".*?"\s*\)'
+            nome_saida_correto = re.search(pattern_saida, student_code) is not None
+            if not nome_saida_correto:
+                raise WrongFilePathError(self.student, "Erro no nome do arquivo de saída\n")
+
+        else:
+            erros = []
+            for output_type in self.output_types:
+                pattern_saida_tipo = fr'fopen\s*\(\s*"Lab{self.numero_lab}_[a-zA-Z0-9_]+_{output_type}\.txt"\s*,\s*".*?"\s*\)'
+                if re.search(pattern_saida_tipo, student_code) is None:
+                    erros.append(f"Arquivo de saída para tipo '{output_type}' não encontrado")
+
+            if erros:
+                raise WrongFilePathError(
+                    self.student,
+                    "\n".join(erros)
+                )
 
     def correct_code(self):
         code = self.get_student_code()
         if self.do_bronco_detection:
-            self.detect_bronco(code)
+            if self.has_report:
+                report_text = self.get_report()
+                self.detect_bronco({
+                    "Código": code,
+                    "Texto Relatório": report_text
+                })
+            else:
+                self.detect_bronco(({
+                    "Código": code,
+                }))
         self.check_fopen_path(code)
     
     def correct_output(self, testcase):
@@ -308,7 +318,7 @@ class LabCorrector():
             lines = [line.rstrip('\n') for line in outputs[output]] 
 
             if len(lines) < 2:
-                output_formatting_errors += f"Output vazio no caso teste {testcase}: {output}:"
+                output_formatting_errors += f"Output vazio no caso teste {testcase}: {output}\n"
                 continue
             
             # Get the correct answers and line matching patterns
@@ -348,16 +358,17 @@ class LabCorrector():
             failed_testcase_errors += "\n"
             raise FailedTestcaseError(self.student, failed_testcase_errors)
 
-    def detect_bronco(self, code):
+    def detect_bronco(self, info_dict):
         corrector_agent = CorrectorAgent(self.ai_correction_criteria)
         
         prompt = (
             self.ai_correction_introduction_prompt
             + "\n\nCritérios de correção:\n\n"
             + "\n\n".join(self.ai_correction_criteria)
-            + "\n\nCódigo do aluno:\n\n"
-            + code
+            + "\n\nInformações do aluno:\n\n"
+            + "\n\n".join(f"{key}:\n{value}" for key, value in info_dict.items())
         )
+
 
         response = corrector_agent.respond(prompt)
         
@@ -396,6 +407,11 @@ class LabCorrector():
             progress = 1
             start = datetime.now()
             for student in students_to_correct:
+                if self.jump_to_student and student.name != self.jump_to_student:
+                    progress += 1
+                    continue
+                if student.name == self.jump_to_student:
+                    self.jump_to_student = None
                 self.student = student
                 start_student = datetime.now()
                 print(f"Correcting... ({progress}/{len(students_to_correct)}). Current student: {student.name}")
