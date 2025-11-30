@@ -64,7 +64,7 @@ class DadosLab:
 
         self.array_regexes = {
             "lines": [
-                r"^\s*(?:\d+|ERRO|AVISO|AGENDA VAZIA)"
+                r"^\s*(?:\d+|ERRO|AVISO|FICA PARA|AGENDA VAZIA)"
             ],
             "values": [
                 r"^\s*(\S+)"

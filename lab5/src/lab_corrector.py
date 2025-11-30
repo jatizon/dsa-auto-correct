@@ -171,6 +171,14 @@ class LabCorrector():
                 shutil.copy(output_path, current_final_output_path)
 
             os.remove(output_path)
+
+            # Append to student output the answer to the testcase
+            with open(current_final_output_path, "a") as f:
+                answers_path = os.path.join(self.testcases_path, testcase, f'saida{self.numero_lab}.json')
+                with open(answers_path, "r", encoding="utf-8") as answers_file:
+                    answers = json.load(answers_file)
+                    f.write("\n\nGABARITO:\n")
+                    f.write(json.dumps(answers, ensure_ascii=False, indent=2) + "\n")
                        
             if self.output_types and not output_type:
                 continue
@@ -354,6 +362,7 @@ class LabCorrector():
             student_values = utils.get_first_matches_in_many_matching_lines(lines, line_regexes, self.array_regexes["values"])
             # If student list is not right, raise error
             if student_values != answers[self.json_field_with_array]:
+                print(student_values, answers[self.json_field_with_array], testcase)
                 failed_testcase_errors += f"Caso teste: {testcase}: {output}: ORDENACAO ERRADA\n"
 
         if output_formatting_errors:
