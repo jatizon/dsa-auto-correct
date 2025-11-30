@@ -35,11 +35,15 @@ def convert_special_caracters(string):
         string = string .replace(orig, repl)
     return string
 
+def remove_spaces(string):
+    return str(string).replace(" ", "").replace("\t", "").replace("\n", "").replace("\r", "")
+
 def treat_invalid_characters(string):
     return string.replace("�", "")
 
 def make_regex_to_match_string(string):
-    return re.escape(string)
+    escaped = re.escape(str(string).rstrip())
+    return escaped
 
 def get_lines_that_matches_any_regex(text_as_str_list, pattern_list, ignorecase=True, return_first_match_only=True):
     ignorecase_flag = re.IGNORECASE if ignorecase else 0
@@ -51,6 +55,7 @@ def get_lines_that_matches_any_regex(text_as_str_list, pattern_list, ignorecase=
                 if return_first_match_only:
                     return line
                 matches.append(line)
+                break
     if not matches:
         return None if return_first_match_only else []
     return matches

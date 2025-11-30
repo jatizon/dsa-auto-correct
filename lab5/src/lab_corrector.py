@@ -104,7 +104,10 @@ class LabCorrector():
             
     def clear_logs_file(self):
         logs_correcao_path = self.student.path + "/logs_correcao_auto.txt"
-        open(logs_correcao_path, "w").close()
+        try:
+            open(logs_correcao_path, "w").close()
+        except:
+            pass
 
     def log_errors(self, encoding):
         logs_correcao_path = self.student.path + "/logs_correcao_auto.txt"
@@ -313,7 +316,7 @@ class LabCorrector():
         output_formatting_errors = ""
 
         for output in outputs:  
-            lines = [line.rstrip('\n') for line in outputs[output]] 
+            lines = outputs[output]
 
             if len(lines) < 2:
                 output_formatting_errors += f"Output vazio no caso teste {testcase}: {output}\n"
@@ -325,7 +328,11 @@ class LabCorrector():
                 answers = json.load(answers_file)
                 line_regexes_from_json = []
                 for string in answers[self.json_field_with_array]:
-                    line_regexes_from_json.append(utils.make_regex_to_match_string(utils.convert_special_caracters(string)))
+                    line_regexes_from_json.append(
+                        utils.make_regex_to_match_string(
+                            utils.convert_special_caracters(str(string))
+                        )
+                    )
             
             # Correct all values the student should print on output
             wrong_values = []
@@ -343,6 +350,7 @@ class LabCorrector():
             
             # Correct list of values the student printed on output
             line_regexes = line_regexes_from_json if self.use_json_to_get_line_patterns else self.array_regexes["lines"]
+            # print(line_regexes)
             student_values = utils.get_first_matches_in_many_matching_lines(lines, line_regexes, self.array_regexes["values"])
             # If student list is not right, raise error
             if student_values != answers[self.json_field_with_array]:

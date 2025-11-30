@@ -87,7 +87,7 @@ class DadosLab:
             # }
         }
 
-        # Leave empty if al outputs are of the format Labn_Seu_Nome.txt
+        # Leave empty if al outputs are of the format   _Seu_Nome.txt
         # Add element "out_type" if they're of the format Labn_Seu_Nome_out_type.txt
         self.output_types = ["merge", "bubble", "quick"]
 
