@@ -148,175 +148,81 @@ class DadosLab:
             '''
 
         # Each element is an instruction for the ai agent
-        self.ai_correction_criteria = [
-
-            """Encapsulamento - Parte 1:
-            Verificar se o aluno respeitou completamente as regras de encapsulamento:
-            - Não usar variáveis globais.
-            - A função main NÃO pode acessar diretamente os campos internos do TAD (vet, quant, MAX).
-            - A função main só pode interagir com o TAD por meio das funções públicas.
-            - Campos internos da struct TipoAgenda não podem ser manipulados fora das funções do TAD.""",
+        self.ai_correction_criteria_lab6 = [
+            """Encapsulamento e modularidade:
+            - Não usar variáveis globais desnecessárias.
+            - Função main NÃO deve acessar diretamente dados internos do grafo (matriz, vetores auxiliares).
+            - Toda interação deve ser feita por funções públicas.
+            - Funções auxiliares privadas devem ser usadas apenas dentro do TAD do grafo.""" ,
 
             """Uso obrigatório da estrutura-base fornecida:
-            Verificar se o aluno manteve exatamente:
-            - as declarações de tipos (struct TipoTarefa e TipoAgenda),
-            - os cabeçalhos das funções,
-            - a função main sem modificações estruturais.
-            Alterações na main, renomear funções públicas, ou mudar assinaturas resulta em penalidade.""",
+            - Manter os tipos e estruturas sugeridas (matriz de adjacências, vetores de tarefas, etc.).
+            - Não alterar a função main estruturalmente.
+            - Assinaturas das funções públicas devem permanecer idênticas.
+            - Qualquer mudança na main, nomes de funções ou parâmetros resulta em penalidade.""" ,
 
             """Funções públicas obrigatórias:
             Conferir se o aluno implementou TODAS as funções solicitadas, com assinaturas idênticas:
-            - Inicializar
-            - Finalizar
-            - Inserir
-            - ConsultarMax
-            - RemoverMax (deve ser void)
-            - FilaVazia (retorna bool)
-            - FilaCheia (retorna bool)
-            A main não pode chamar funções privadas, apenas estas.""",
+            - Verificar aciclicidade
+            - Ordenação topológica
+            - Cálculo do tempo mínimo do projeto
+            - Determinação do caminho crítico
+            A main não deve chamar funções privadas diretamente.""" ,
 
-            """Heap máximo indexado em 1:
-            Verificar se o heap está implementado corretamente:
-            - a posição 0 do vetor NÃO é usada;
-            - a raiz está na posição 1;
-            - o vetor é alocado com tamanho MAX+1;
-            - o TAD utiliza um heap de máximo (max-heap).""",
+            """Verificação de aciclicidade:
+            - Detectar ciclos corretamente usando DFS ou outro método adequado.
+            - Caso haja ciclo, imprimir o ciclo encontrado e mensagem de impossibilidade.
+            - Não deve continuar com cálculo do caminho crítico se houver ciclo.""" ,
 
-            """Operações de heap:
-            Validar as regras de funcionamento:
-            - Inserir deve aplicar sift-up (subir enquanto prioridade maior que o pai).
-            - RemoverMax deve aplicar sift-down (descer comparando filhos).
-            - ConsultarMax deve simplesmente retornar vet[1].
-            - A propriedade do heap deve ser mantida após cada operação.""",
+            """Ordenação topológica:
+            - Deve gerar uma ordenação válida do grafo acíclico.
+            - A ordenação deve ser usada no cálculo do tempo mínimo.
+            - Pode-se usar recursão aqui, conforme permitido.""" ,
 
-            """Inicializar:
-            Deve:
-            - alocar o vetor do heap (malloc),
-            - definir quant = 0,
-            - armazenar o valor MAX lido da entrada.
-            Não pode ler arquivos ou imprimir nada.""",
+            """Cálculo do tempo mínimo:
+            - Deve usar a ordem topológica, sem recursão.
+            - Considerar corretamente as durações e pré-requisitos.
+            - O resultado deve corresponder ao menor tempo total do projeto.""" ,
 
-            """Finalizar:
-            Deve apenas:
-            - liberar o vetor com free,
-            - não deve imprimir nada,
-            - não deve encerrar arquivos (isso é da main).""",
-
-            """FilaVazia e FilaCheia:
-            Conferir:
-            - FilaVazia retorna quant == 0,
-            - FilaCheia retorna quant == MAX.
-            Não deve imprimir nada e não pode acessar arquivo.""",
-
-            """Inserir:
-            Regras obrigatórias:
-            - não pode inserir se a fila estiver cheia (main já testa isso),
-            - inserir no final do heap (quant+1),
-            - aplicar sift-up,
-            - atualizar quant.
-            Não pode imprimir nada.""",
-
-            """RemoverMax:
-            Regras obrigatórias:
-            - só executa se quant > 0 (main testa antes),
-            - troca raiz com o último elemento,
-            - decrementa quant,
-            - aplica sift-down.
-            Deve ser void e não imprimir nada.""",
-
-            """ConsultarMax:
-            Regras obrigatórias:
-            - retornar o elemento da raiz (vet[1]).
-            - não pode remover o elemento,
-            - não pode imprimir nada.""",
+            """Determinação do caminho crítico:
+            - Identificar corretamente uma sequência de tarefas que não pode ter atrasos.
+            - Caso haja múltiplos caminhos críticos, mostrar pelo menos um.
+            - Mostrar as tarefas na ordem do caminho crítico.""" ,
 
             """Entrada e formato:
-            Verificar:
-            - pular as 5 linhas iniciais,
-            - ler tamanho máximo,
-            - pular mais 3 linhas,
-            - seguir exatamente o fluxo da main fornecida,
-            - não alterar lógica de leitura.
-            Descrição da tarefa deve ter até 40 caracteres.""",
+            - Ler arquivo de entrada 'entrada6.txt'.
+            - Número máximo de tarefas: 52.
+            - Descrições de tarefas: até 30 caracteres.
+            - Tarefas identificadas por letra única.
+            - Tarefa sem pré-requisito indicada por ponto.
+            - Seguir exatamente o fluxo de leitura conforme roteiro.""" ,
 
             """Saída e alinhamento:
-            Conferir:
-            - cabeçalho de saída deve seguir exatamente o modelo fornecido,
-            - linhas de cabeçalho com máximo de 70 caracteres,
-            - mensagens de erro e aviso devem ser alinhadas como o exemplo,
-            - ao consultar tarefa, imprimir prioridade e descrição no formato esperado.""",
+            - Arquivo saída: 'Lab6_seu_nome_e_sobrenomes.txt'.
+            - Cabeçalhos e mensagens devem seguir o modelo do roteiro.
+            - Mensagens para ciclos e avisos de impossibilidade devem ser claras e alinhadas.
+            - Ordenação topológica e caminho crítico devem estar bem apresentadas.""" ,
 
             """Mensagens obrigatórias:
-            Verificar se o programa imprime:
-            - AVISO quando consultar tarefa com agenda vazia,
-            - ERRO quando tentar inserir agenda cheia,
-            - AVISO final caso a agenda termine vazia após o comando FIM.
-            As mensagens podem ter frases diferentes, mas o alinhamento deve seguir o exemplo.""",
-
-            """Processamento após FIM:
-            O programa deve:
-            - imprimir cabeçalho de 'Fica para o dia seguinte',
-            - desfazer o heap removendo um por um,
-            - imprimir tarefas em ordem decrescente de prioridade,
-            - usar ConsultarMax e RemoverMax para isso.
-            A main não pode acessar o vetor do heap diretamente.""",
-
-            """Proibição de acessar campos internos do TAD na main:
-            A main NÃO pode acessar:
-            - A.quant
-            - A.MAX
-            - A.vet
-            - qualquer posição do vetor
-            Isso gera penalização imediata.""",
+            - Informar se o grafo contém ciclos.
+            - Mostrar ordenação topológica se acíclico.
+            - Mostrar tempo mínimo do projeto.
+            - Mostrar caminho crítico.
+            - Mensagens podem variar em texto, mas alinhamento e clareza são obrigatórios.""" ,
 
             """Erros críticos:
-            Casos que devem gerar penalização grande:
-            - código não compila,
-            - main alterada,
-            - heap não usado,
-            - TAD ignorado (tudo feito na main),
-            - funções com assinaturas diferentes das fornecidas.""",
+            - Código não compila.
+            - Main alterada estruturalmente.
+            - Funções públicas ausentes ou com assinaturas diferentes.
+            - Lógica do TAD ou cálculo do tempo mínimo incorretos.
+            - Ciclos não detectados corretamente.""" ,
 
-            """Implementações corretas, mas significativamente subótimas (heap):
-            Este critério identifica soluções que *funcionam* e passam nos casos básicos,
-            mas apresentam problemas estruturais ou lógicos que tornam a implementação
-            muito inferior ao esperado, mesmo sem ser completamente errada.
-            Penalizações moderadas devem ser aplicadas quando ocorrerem situações como:
-
-            1. Sift-up ou sift-down corretos, mas implementados com complexidade desnecessária:
-            - loops que percorrem o heap inteiro para encontrar pai ou filho;
-            - comparação redundante com todos os filhos em vez de apenas o maior;
-            - dupla verificação de condições sem necessidade.
-
-            2. Uso de funções auxiliares extremamente ineficientes:
-            - recalcular o maior filho escaneando toda a árvore;
-            - recomputar índices de pai/filho em loops externos sem necessidade.
-
-            3. Implementação de RemoverMax trocando elementos muitos mais vezes que o necessário:
-            - realizar várias trocas de posições antes de iniciar o sift-down;
-            - usar swaps repetidos em vez de mover o buraco (hole method).
-
-            4. Inserção ou remoção funcionando, mas com ordem subótima:
-            - copiar elementos sucessivamente para cima/baixo ao invés de trocar posições;
-            - deslocamentos lineares quando o heap permite operações logarítmicas.
-
-            5. Uso incorreto de condições lógicas:
-            - sift-down que primeiro tenta descer pela esquerda, e só depois compara com direita,
-                podendo resultar em árvores quase certas com trabalho extra desnecessário.
-
-            6. Acessos desnecessários à memória:
-            - múltiplas leituras do mesmo elemento do vetor dentro do mesmo laço;
-            - cálculo repetido (2*i, 2*i+1, i/2) dentro de loops sem salvar em variáveis locais.
-
-            Observação importante:
-            Não se penaliza itens menores ou pedagógicos, como:
-            - comentar pouco,
-            - implementar sift-down com while ou com if + loop,
-            - trocar pai/filho com uma função auxiliar,
-            - usar variáveis auxiliares simples.
-            Somente penalizar quando o código fica visivelmente mais lento ou trabalhoso
-            sem necessidade, mesmo mantendo a corretude funcional do heap.""",
-
+            """Implementações corretas, mas subótimas:
+            - Cálculo do tempo mínimo ineficiente (complexidade maior que O(V+E)).
+            - Ordenação topológica mal implementada ou repetitiva.
+            - Verificação de aciclicidade usando loops desnecessários.
+            - Caminho crítico obtido de forma lenta ou com lógica confusa.
+            - Penalizar somente se houver impacto perceptível na performance, sem afetar a corretude funcional.""",
         ]
 
 

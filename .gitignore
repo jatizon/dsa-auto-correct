@@ -6,7 +6,7 @@ lab*/labs-teste/*/*.cpp
 lab*/labs-teste/*/outputs/*
 lab*/erros-alunos
 lab*/src/__pycache__/
-lab*/testcases/*/
+lab*/testcases*/**/*/
 !lab*/testcases/exemplo-classroom/**
 lab*/**/a.out
 lab*/**/logs_correcao*.txt

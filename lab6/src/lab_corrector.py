@@ -54,10 +54,8 @@ class LabCorrector():
         self.run_timeout = dados_lab.run_timeout
         self.compile_timeout = dados_lab.compile_timeout
         self.student_folder_files = dados_lab.student_folder_files
-        self.use_json_to_get_line_patterns = dados_lab.use_json_to_get_line_patterns
-        self.json_field_with_array = dados_lab.json_field_with_array
         self.array_regexes = dados_lab.array_regexes
-        self.value_to_regexes = dados_lab.value_to_regexes   
+        self.correction_function = dados_lab.correction_function
         self.output_types = dados_lab.output_types     
         self.ai_correction_criteria = dados_lab.ai_correction_criteria
         self.ai_correction_introduction_prompt = dados_lab.ai_correction_introduction_prompt
@@ -178,7 +176,7 @@ class LabCorrector():
                 with open(answers_path, "r", encoding="utf-8") as answers_file:
                     answers = json.load(answers_file)
                     f.write("\n\nGABARITO:\n")
-                    f.write(json.dumps(answers, ensure_ascii=False, indent=2) + "\n")
+                    f.write(json.dumps(answers.get("order", []), ensure_ascii=False, indent=2) + "\n")
                        
             if self.output_types and not output_type:
                 continue
@@ -329,43 +327,19 @@ class LabCorrector():
 
         for output in outputs:  
             lines = outputs[output]
-
-            if len(lines) < 2:
-                output_formatting_errors += f"Output vazio no caso teste {testcase}: {output}\n"
-                continue
             
             # Get the correct answers and line matching patterns
             answers_path = os.path.join(self.testcases_path, testcase, f'saida{self.numero_lab}.json')
             with open(answers_path, "r", encoding="utf-8") as answers_file:
                 answers = json.load(answers_file)
-                line_regexes_from_json = []
-                for string in answers[self.json_field_with_array]:
-                    line_regexes_from_json.append(
-                        utils.make_regex_to_match_string(
-                            utils.convert_special_caracters(str(string))
-                        )
-                    )
-            
-            # Correct all values the student should print on output
-            wrong_values = []
-            for value_name in self.value_to_regexes:
-                student_value = utils.get_first_match_in_first_matching_line(lines, self.value_to_regexes[value_name]["lines"], self.value_to_regexes[value_name]["values"])
-                # If can't find a value, raise error asap
-                if student_value is None:
-                    output_formatting_errors += f"Caso teste: {testcase}: {output}: Nao imprimiu {value_name.upper()}\n"
-                # If value is diff from the answer, continue correction
-                if student_value and int(student_value) != answers[value_name]:
-                    wrong_values.append(value_name)
-                
-            for value_name in wrong_values:
-                failed_testcase_errors += f"Caso teste {testcase}: {output}: {value_name.upper()} errado\n"
             
             # Correct list of values the student printed on output
-            line_regexes = line_regexes_from_json if self.use_json_to_get_line_patterns else self.array_regexes["lines"]
-            student_values = utils.get_first_matches_in_many_matching_lines(lines, line_regexes, self.array_regexes["values"])
+            student_values = utils.get_first_matches_in_many_matching_lines(lines, self.array_regexes["lines"], self.array_regexes["values"])
+
             # If student list is not right, raise error
-            if student_values != answers[self.json_field_with_array]:
-                failed_testcase_errors += f"Caso teste: {testcase}: {output}: ORDENACAO ERRADA\n"
+            success, comment = self.correction_function(student_values, answers)
+            if not success:
+                failed_testcase_errors += f"Caso teste: {testcase}: {output}: {comment}\n"
 
         if output_formatting_errors:
             output_formatting_errors += "\n"
@@ -420,7 +394,7 @@ class LabCorrector():
                     break
             students_to_correct = [student for student in self.students if (self.error_type_to_correct == 'ALL' or student.error_type == self.error_type_to_correct)]
             if not correct_all_students:
-                students_to_correct = [student for student in students_to_correct if student.name == self.student_to_correct]
+                students_to_correct = [student for student in students_to_correct if student.name.startswith(self.student_to_correct)]
             progress = 1
             start = datetime.now()
             for student in students_to_correct:
