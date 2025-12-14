@@ -89,7 +89,7 @@ class DadosLab:
             print(student_values)
             print(answers_json['order'])
             if answers_json['tem_ciclo'] == True:
-                #see if matcheds any in answers json order array
+                #see if matches any in answers json order array
                 for order in answers_json['order']:
                     if student_values == order:
                         return True, "Ordem ciclo CORRETA"
@@ -133,10 +133,10 @@ class DadosLab:
                 # Verifica caminho crítico (elementos 2 em diante)
                 if len(student_values) < len(answers_json['order']) or student_values[2:] != answers_json['order'][2:]:
                     caminho_critico_correto = False
-                
                 msg_ordem = "Ordem topológica CORRETA" if ordem_topologica_correta else "Ordem topológica ERRADA"
                 msg_tempo = "tempo mínimo CORRETO" if tempo_minimo_correto else "tempo mínimo ERRADO"
                 msg_caminho = "caminho crítico CORRETO" if caminho_critico_correto else "caminho crítico ERRADO"
+                print(msg_ordem, msg_tempo, msg_caminho)
                 mensagem = f"{msg_ordem}, {msg_tempo}, {msg_caminho}"
                 tudo_ok = ordem_topologica_correta and tempo_minimo_correto and caminho_critico_correto
                 return tudo_ok, mensagem
