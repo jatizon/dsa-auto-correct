@@ -121,7 +121,7 @@ class DadosLab:
 
             OU
 
-            [ERROU]: Não usar printf
+            [ERROU]: Não usar printf ad
             Justificativa: Usou printf
 
             COMENTARIOS:
