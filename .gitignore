@@ -1,12 +1,24 @@
 .env
 .venv/
 .vscode/
+__pycache__/
+
+# Student submissions and outputs
+previous_labs/lab*/labs-alunos*/
+previous_labs/lab*/erros-alunos/
 lab*/labs-alunos*/
+lab*/erros-alunos/
+
+# Testcases
+previous_labs/lab*/testcases*/
+lab*/testcases*/
+
+# Student test folders (keep structure but ignore contents)
 lab*/labs-teste/*/*.cpp
 lab*/labs-teste/*/outputs/*
-lab*/erros-alunos
-lab*/src/__pycache__/
-lab*/testcases*/**/*/
-!lab*/testcases/exemplo-classroom/**
+
+# Compiled binaries and logs
 lab*/**/a.out
+previous_labs/lab*/**/a.out
 lab*/**/logs_correcao*.txt
+previous_labs/lab*/**/logs_correcao*.txt
