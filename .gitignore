@@ -17,6 +17,10 @@ lab*/testcases*/
 lab*/labs-teste/*/*.cpp
 lab*/labs-teste/*/outputs/*
 
+# Source code inside labs (keep centralized src/ only)
+previous_labs/lab*/src/
+lab*/src/
+
 # Compiled binaries and logs
 lab*/**/a.out
 previous_labs/lab*/**/a.out
